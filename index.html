@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <script type="text/javascript" src="https://yastatic.net/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript" src="node_modules/noscript/dist/noscript.js"></script>
+    <script src="https://fb.me/react-0.13.3.js"></script>
+    <script src="https://fb.me/JSXTransformer-0.13.3.js"></script>
+
+    <style type="text/css">
+        .list {
+            padding: 20px;
+            background: lightyellow;
+            list-style: none;
+        }
+    </style>
+
+    <div id="app"></div>
+
+    <p>Изменить существующий элемент</p>
+    <code><pre>
+    (function() {
+        var item = ns.Model.get('item', {id: '3'});
+        item.set('.title', 'foo2');
+    }());
+    </pre></code>
+
+    <p>Добавить новый элемент в коллекцию</p>
+    <code><pre>
+    (function() {
+        var item = ns.Model.get('item', {id: '4'});
+        item.setData({ title: 'hello, world' });
+        ns.Model.get('list').insert(item);
+    }());
+    </pre></code>
+
+    <script type="text/jsx">
+        /** @jsx React.DOM **/
+        var Item = React.createClass({
+            getInitialState: function() {
+                return this.props.model.getData();
+            },
+            componentDidMount: function() {
+                this.props.model.on('ns-model-changed', this.update);
+            },
+            componentWillUnmount: function() {
+                this.props.model.off('ns-model-changed', this.update);
+            },
+            update: function() {
+                this.setState(this.props.model.getData());
+            },
+            render: function() {
+                return (
+                    <li>{this.state.title}</li>
+                );
+            }
+        });
+        var List = React.createClass({
+            getInitialState: function() {
+                return {
+                    items: this.props.model.models
+                };
+            },
+            componentDidMount: function() {
+                this.props.model.on('ns-model-insert', this.update);
+                this.props.model.on('ns-model-remove', this.update);
+            },
+            componentWillUnmount: function() {
+                this.props.model.off('ns-model-insert', this.update);
+                this.props.model.off('ns-model-remove', this.update);
+            },
+            update: function() {
+                this.setState({
+                    items: this.props.model.models
+                });
+            },
+            render: function() {
+                var items = ns.Model.get('list').models.map(function(model) {
+                    return <Item model={ model } key={ model.key } />;
+                });
+                return (
+                    <ul className="list">
+                        {items}
+                    </ul>
+                );
+            }
+        });
+
+        ns.Model.define('list', {
+            split: {
+                items: '.items',
+                model_id: 'item',
+                params: {
+                    id: '.id'
+                }
+            }
+        });
+        ns.Model.define('item', {
+            params: {
+                id: null
+            }
+        });
+        ns.Model.get('item', {id: '1'}).setData({ title: 'foo' });
+        ns.Model.get('item', {id: '2'}).setData({ title: 'bar' });
+        ns.Model.get('item', {id: '3'}).setData({ title: 'baz' });
+
+        ns.Model.get('list').insert([
+            ns.Model.get('item', {id: '1'}),
+            ns.Model.get('item', {id: '2'}),
+            ns.Model.get('item', {id: '3'})
+        ]);
+
+        ns.layout.define('app', {
+            app: true
+        });
+        ns.router.routes = {
+            route: {
+                '/': 'app'
+            }
+        };
+
+        ns.View.define('app', {
+            events: {
+                'ns-view-htmlinit': function() {
+                    try {
+                        React.render(
+                            React.createElement(List, {
+                                model: ns.Model.get('list')
+                            }),
+                            this.node
+                        );
+                    } catch(e) {
+                        console.log(e);
+                    }
+                }
+            }
+        });
+
+        /**
+         * Захардкодим шаблон — не хочется подключать yate
+         */
+        ns.renderString = function() {
+            return '<div><div class="ns-view-id-1 ns-view-app" data-key="view=app"></div></div>';
+        };
+
+        ns.init();
+        ns.page.go();
+    </script>
+</body>
+</html>
