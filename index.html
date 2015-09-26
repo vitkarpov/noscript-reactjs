@@ -118,7 +118,7 @@
         });
         ns.router.routes = {
             route: {
-                '/': 'app'
+                '/noscript-reactjs/': 'app'
             }
         };
 
@@ -144,6 +144,10 @@
          */
         ns.renderString = function() {
             return '<div><div class="ns-view-id-1 ns-view-app" data-key="view=app"></div></div>';
+        };
+
+        ns.page.title = function() {
+            return 'Noscript ❤ Reactjs Prototype';
         };
 
         ns.init();
