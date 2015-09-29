@@ -7,35 +7,39 @@
 <body>
     <script type="text/javascript" src="https://yastatic.net/jquery/2.1.4/jquery.min.js"></script>
     <script type="text/javascript" src="node_modules/noscript/dist/noscript.min.js"></script>
+    <script type="text/javascript" src="node_modules/yate/lib/runtime.js"></script>
+    <script type="text/javascript" src="templates.js"></script>
     <script src="https://fb.me/react-0.13.3.js"></script>
     <script src="https://fb.me/JSXTransformer-0.13.3.js"></script>
 
     <style type="text/css">
-        .list {
+        .ns-view-app
+        {
+            display: flex;
+            align-items: stretch;
+
+            margin: 20px 0;
+        }
+
+        .ns-view-listYate,
+        .ns-view-listReact
+        {
+            display: inline-block;
+
             padding: 20px;
             background: lightyellow;
             list-style: none;
         }
+
+        .list div
+        {
+            display: inline-block;
+            margin: 2px;
+        }
     </style>
 
+    <button class="js-add">Добавить 1000 новых элементов</button>
     <div id="app"></div>
-
-    <p>Изменить существующий элемент</p>
-    <code><pre>
-    (function() {
-        var item = ns.Model.get('item', {id: '3'});
-        item.set('.title', 'foo2');
-    }());
-    </pre></code>
-
-    <p>Добавить новый элемент в коллекцию</p>
-    <code><pre>
-    (function() {
-        var item = ns.Model.get('item', {id: '4'});
-        item.setData({ title: 'hello, world' });
-        ns.Model.get('list').insert(item);
-    }());
-    </pre></code>
 
     <script type="text/jsx">
         /** @jsx React.DOM **/
@@ -54,7 +58,7 @@
             },
             render: function() {
                 return (
-                    <li>{this.state.title}</li>
+                    <div>{this.state.title}</div>
                 );
             }
         });
@@ -82,9 +86,9 @@
                     return <Item model={ model } key={ model.key } />;
                 });
                 return (
-                    <ul className="list">
+                    <div className="list">
                         {items}
-                    </ul>
+                    </div>
                 );
             }
         });
@@ -98,23 +102,18 @@
                 }
             }
         });
+
         ns.Model.define('item', {
             params: {
                 id: null
             }
         });
-        ns.Model.get('item', {id: '1'}).setData({ title: 'foo' });
-        ns.Model.get('item', {id: '2'}).setData({ title: 'bar' });
-        ns.Model.get('item', {id: '3'}).setData({ title: 'baz' });
-
-        ns.Model.get('list').insert([
-            ns.Model.get('item', {id: '1'}),
-            ns.Model.get('item', {id: '2'}),
-            ns.Model.get('item', {id: '3'})
-        ]);
 
         ns.layout.define('app', {
-            app: true
+            app: {
+                listYate: true,
+                listReact: true
+            }
         });
         ns.router.routes = {
             route: {
@@ -122,7 +121,9 @@
             }
         };
 
-        ns.View.define('app', {
+        ns.View.define('app');
+
+        ns.View.define('listReact', {
             events: {
                 'ns-view-htmlinit': function() {
                     try {
@@ -139,19 +140,66 @@
             }
         });
 
-        /**
-         * Захардкодим шаблон — не хочется подключать yate
-         */
-        ns.renderString = function() {
-            return '<div><div class="ns-view-id-1 ns-view-app" data-key="view=app"></div></div>';
+        ns.ViewCollection.define('listYate', {
+            models: {
+                list: {
+                    'ns-model-insert': 'updateView',
+                    'ns-model-remove': 'updateView'
+                }
+            },
+            split: {
+                byModel: 'list',
+                intoViews: 'itemYate'
+            }
+        });
+
+        ns.View.define('itemYate', {
+            models: {
+                item: {
+                    'ns-model-changed': 'updateView'
+                }
+            }
+        });
+
+        ns.View.prototype.updateView = function() {
+            if (this.isVisible()) {
+                this.invalidate();
+            }
+            ns.page.go();
         };
 
         ns.page.title = function() {
             return 'Noscript ❤ Reactjs Prototype';
         };
 
+        var gid = (function() {
+            var i = 0;
+            return function() {
+                return i++;
+            }
+        }());
+
+        var addElements = function(l) {
+            var list = [];
+
+            while (l--) {
+                var id = gid();
+                var model = ns.Model.get('item', { id: id });
+
+                model.setData({ title: 'item-' + id });
+                list.push(model);
+            }
+
+            ns.Model.get('list').insert(list);
+        };
+
+        addElements(1);
+        $('.js-add').click(function() {
+            addElements(1000);
+        });
+
         ns.init();
-        ns.page.go();
+        ns.page.go('/noscript-reactjs/');
     </script>
 </body>
 </html>

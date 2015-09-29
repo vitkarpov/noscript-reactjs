@@ -1,0 +1,15 @@
+include "node_modules/noscript/yate/noscript.yate"
+
+match .app ns-view-content {
+    apply /.views.* ns-view
+}
+
+match .listYate ns-view-content {
+    <div class="ns-view-container-desc list">
+        apply . ns-view-collection
+    </div>
+}
+
+match .itemYate ns-view-content {
+    model('item').title
+}

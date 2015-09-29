@@ -1,5 +1,7 @@
 # Noscript + Reactjs
 
+Чтобы скомпилировать шаблоны:
+
 ```
-$ python -m SimpleHTTPServer
+$ node_modules/.bin/yate templates.yate -o templates.js
 ```
